@@ -29,35 +29,35 @@ object TagsContext2 {
     val spark = SparkSession.builder().appName("Tags").master("local").getOrCreate()
     import spark.implicits._
 
-//    // 调用HbaseAPI
-//    val load = ConfigFactory.load()
-//    // 获取表名
-//    val HbaseTableName = load.getString("HBASE.tableName")
-//    // 创建Hadoop任务
-//    val configuration = spark.sparkContext.hadoopConfiguration
-//    // 配置Hbase连接
-//    configuration.set("hbase.zookeeper.quorum",load.getString("HBASE.Host"))
-//    // 获取connection连接
-//    val hbConn = ConnectionFactory.createConnection(configuration)
-//    val hbadmin = hbConn.getAdmin
-//    // 判断当前表是否被使用
-//    if(!hbadmin.tableExists(TableName.valueOf(HbaseTableName))){
-//      println("当前表可用")
-//      // 创建表对象
-//      val tableDescriptor = new HTableDescriptor(TableName.valueOf(HbaseTableName))
-//      // 创建列簇
-//      val hColumnDescriptor = new HColumnDescriptor("tags")
-//      // 将创建好的列簇加入表中
-//      tableDescriptor.addFamily(hColumnDescriptor)
-//      hbadmin.createTable(tableDescriptor)
-//      hbadmin.close()
-//      hbConn.close()
-//    }
-//    val conf = new JobConf(configuration)
-//    // 指定输出类型
-//    conf.setOutputFormat(classOf[TableOutputFormat])
-//    // 指定输出哪张表
-//    conf.set(TableOutputFormat.OUTPUT_TABLE,HbaseTableName)
+    // 调用HbaseAPI
+    val load = ConfigFactory.load()
+    // 获取表名
+    val HbaseTableName = load.getString("HBASE.tableName")
+    // 创建Hadoop任务
+    val configuration = spark.sparkContext.hadoopConfiguration
+    // 配置Hbase连接
+    configuration.set("hbase.zookeeper.quorum",load.getString("HBASE.Host"))
+    // 获取connection连接
+    val hbConn = ConnectionFactory.createConnection(configuration)
+    val hbadmin = hbConn.getAdmin
+    // 判断当前表是否被使用
+    if(!hbadmin.tableExists(TableName.valueOf(HbaseTableName))){
+      println("当前表可用")
+      // 创建表对象
+      val tableDescriptor = new HTableDescriptor(TableName.valueOf(HbaseTableName))
+      // 创建列簇
+      val hColumnDescriptor = new HColumnDescriptor("tags")
+      // 将创建好的列簇加入表中
+      tableDescriptor.addFamily(hColumnDescriptor)
+      hbadmin.createTable(tableDescriptor)
+      hbadmin.close()
+      hbConn.close()
+    }
+    val conf = new JobConf(configuration)
+    // 指定输出类型
+    conf.setOutputFormat(classOf[TableOutputFormat])
+    // 指定输出哪张表
+    conf.set(TableOutputFormat.OUTPUT_TABLE,HbaseTableName)
 
     // 读取数据文件
     val df = spark.read.parquet(inputPath)
@@ -125,7 +125,7 @@ object TagsContext2 {
       case (uid,(cnId,tagsAndUserId))=>{
         (cnId,tagsAndUserId)
       }
-    }.filter(_._2.isEmpty==false).foreach(println)
+    }.filter(_._2.isEmpty==false)
 //      .reduceByKey(
 //      (list1,list2)=>{
 //      (list1++list2)
@@ -133,14 +133,14 @@ object TagsContext2 {
 //        .mapValues(_.map(_._2).sum)
 //        .toList
 //    }).foreach(println)
-//      .map{
-//      case (userId,userTags) =>{
-//        // 设置rowkey和列、列名
-//        val put = new Put(Bytes.toBytes(userId))
-//        put.addImmutable(Bytes.toBytes("tags"),Bytes.toBytes(day),Bytes.toBytes(userTags.mkString(",")))
-//        (new ImmutableBytesWritable(),put)
-//      }
-//    }.saveAsHadoopDataset(conf)
+      .map{
+      case (userId,userTags) =>{
+        // 设置rowkey和列、列名
+        val put = new Put(Bytes.toBytes(userId))
+        put.addImmutable(Bytes.toBytes("tags"),Bytes.toBytes(day),Bytes.toBytes(userTags.mkString(",")))
+        (new ImmutableBytesWritable(),put)
+      }
+    }.saveAsHadoopDataset(conf)
 
     spark.stop()
   }
